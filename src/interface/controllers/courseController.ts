@@ -1,5 +1,5 @@
 import {CourseService} from "../../application/use-case/course"
-// import { LoginUser,tempId, Email } from "../../domain/entities/IUser";
+import {ReportData} from "../../domain/entities/ICourse";
 
 
 class CourseController {
@@ -29,7 +29,7 @@ class CourseController {
             console.log('in controlerrr');
             const result = await this.courseService.userCourse();
             console.log('got result from course.ts for addocourse');
-            
+         
             return result
         }catch(error){
             console.log('error in addcourse',error);
@@ -156,6 +156,97 @@ class CourseController {
     
         }
     }
+
+
+    async userMyCourses(data: any){
+        try {
+            
+            console.log(data,'in controlerrr');
+            const result = await this.courseService.userMyCourses(data);
+            console.log('got result from course.ts for addocourse');
+            
+            return result
+        }catch(error){
+            console.log('error in addcourse',error);
+    
+        }
+    }
+
+
+    async courseViewDetails(data:{courseId:string}){
+        try {
+            
+            console.log(data,'in controlerrr');
+            const result = await this.courseService.courseViewDetails(data);
+            console.log('got result from course.ts for addocourse');
+            
+            return result
+        }catch(error){
+            console.log('error in addcourse',error);
+    
+        }
+    }
+
+
+    async report(data:ReportData){
+        try {
+            
+            console.log(data,'in controlerrr');
+            const result = await this.courseService.report(data);
+            console.log('got result from course.ts for addocourse');
+            
+            return result
+        }catch(error){
+            console.log('error in addcourse',error);
+    
+        }
+    }
+
+
+
+    async reportCourses(){
+        try {
+            
+            const result = await this.courseService.reportCourses();
+            console.log('got result from course.ts for addocourse');
+            
+            return result
+        }catch(error){
+            console.log('error in addcourse',error);
+    
+        }
+    }
+
+
+    async graphCourses(data:any){
+        try {
+            
+            const result = await this.courseService.graphCourses(data);
+            console.log('got result from course.ts for graph courses');
+            
+            return result
+        }catch(error){
+            console.log('error in addcourse',error);
+    
+        }
+    }
+
+
+    async notifyCourseData(data:{roomId:string}){
+        try {
+            
+            const result = await this.courseService.notifyCourseData(data);
+            console.log('got result from course.ts for graph courses');
+            
+            return result
+        }catch(error){
+            console.log('error in addcourse',error);
+    
+        }
+    }
+
+
+
 }
 
 export const courseController = new CourseController()

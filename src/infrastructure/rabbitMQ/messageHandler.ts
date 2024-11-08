@@ -72,6 +72,36 @@ export default class MessageHandlers{
                 response = await courseController.fetchMyCourseData(data)
                 console.log("data reached ",response);
                 break;
+            case 'fetch-user-myCourse' :
+                console.log('Handling operation',operations,data);
+                response = await courseController.userMyCourses(data)
+                console.log("data reached ",response);
+                break;
+            case 'course-view-details' :
+                console.log('Handling operation',operations,data);
+                response = await courseController.courseViewDetails(data)
+                console.log("data reached ",response);
+                break;
+            case 'report-course' :
+                console.log('Handling operation',operations,data);
+                response = await courseController.report(data)
+                console.log("data reached ",response);
+                break;
+            case 'admin-report-courses' :
+                console.log('Handling operation',operations,data);
+                response = await courseController.reportCourses()
+                console.log("data reached ",response);
+                break; 
+            case 'tutor-fetch-graphCourses' :
+                console.log('Handling operation',operations,data);
+                response = await courseController.graphCourses(data)
+                console.log("data reached ",response);
+                break;     
+            case 'notify-course-data' :
+                console.log('Handling operation',operations,data);
+                response = await courseController.notifyCourseData(data)
+                console.log("data reached ",response);
+                break;  
         }
 
         
@@ -81,3 +111,4 @@ export default class MessageHandlers{
 }
 
      
+

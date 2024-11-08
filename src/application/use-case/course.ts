@@ -1,5 +1,5 @@
 import {CourseRepository} from "../../domain/repositories/CourseRepository";
-import { ICourse,courseId,ICourseData } from "../../domain/entities/ICourse";
+import { ICourse,courseId,ICourseData,ReportData} from "../../domain/entities/ICourse";
 import mongoose, { Document } from "mongoose";
 
 
@@ -345,10 +345,206 @@ async fetchMyCourseData(data: any) {
 }
 
 
+async userMyCourses(data: any) {
+  try {
+    console.log(data,"111111111111111111111111111111dataaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
+      const result = await this.courseRepo.userMyCourses(data);
+
+      // Check if result.courses is defined and is an array
+      if (!result.courses || !Array.isArray(result.courses)) {
+          console.log('No courses found or invalid data structure.');
+          return { success: false, message: 'No courses available.' };
+      }
+
+      // Convert S3 keys to signed URLs for the thumbnails
+      const coursesWithSignedUrls = await Promise.all(
+          result.courses.map(async (course: any) => {
+              const signedUrl = await this.getObjectSignedUrl(course.thumbnail);
+              return {
+                  ...course, // Spread the course data
+                  thumbnail: signedUrl, // Replace thumbnail with signed URL
+              };
+          })
+      );
+
+      // Return the updated courses with signed URLs
+      return {
+          success: true,
+          courses: coursesWithSignedUrls,
+      };
+
+  } catch (error) {
+      console.log('catch', error);
+      return {
+          success: false,
+          message: 'Error fetching courses. Please try again.',
+      };
+  }
+}
 
 
-  
 
+async courseViewDetails(data: { courseId: string }) {
+  try {
+    console.log('Attempting to fetch course details for view...');
+
+    const { courseId } = data;
+    const response = await this.courseRepo.courseViewDetails(courseId);
+
+    console.log(response)
+
+    if (!response || !response.courses || !response.courseId) {
+      console.error("Failed to fetch course data:", response?.message);
+      return {
+        success: false,
+        message: "Error fetching course details. Please try again.",
+      };
+    }
+
+    const courseData = response.courses as ICourse;
+    const courseIdStr = response.courseId.toString(); // Convert courseId to string if needed
+
+    // Convert Date fields to strings
+    const createdAt = courseData.createdAt?.toISOString();
+
+    // Get signed URL for thumbnail
+    const thumbnailUrl = await this.getObjectSignedUrl(courseData.thumbnail);
+
+    // Update the lessons in each section to add displayVideo
+    const sectionsWithUpdatedLessons = await Promise.all(courseData.sections.map(async (section: any) => {
+      const updatedLessons = await Promise.all(section.lessons.map(async (lesson: any) => {
+        // Generate signed video URL for each lesson's video key
+        const displayVideo = await this.getObjectSignedUrl(lesson.video);
+        return {
+          ...lesson,
+          displayVideo  // Add displayVideo field
+        };
+      }));
+
+      return {
+        _id: section._id,
+        title: section.title,
+        description: section.description,  // Ensure description is included
+        lessons: updatedLessons
+      };
+    }));
+
+    // Construct the final structured course data
+    const structuredCourseData: ICourseData = {
+      tutorId: courseData.tutorId,
+      courseName: courseData.courseName,
+      courseDescription: courseData.courseDescription,
+      thumbnail: courseData.thumbnail,
+      thumbnailUrl,
+      coursePrice: courseData.coursePrice,
+      courseDiscountPrice: courseData.courseDiscountPrice,
+      courseCategory: courseData.courseCategory,
+      courseLevel: courseData.courseLevel,
+      demoURL: courseData.demoURL,
+      prerequisites: courseData.prerequisites,
+      benefits: courseData.benefits,
+      sections: sectionsWithUpdatedLessons,  // Use updated sections
+      createdAt,
+      isListed: courseData.isListed,
+    };
+
+    // Log structured data for debugging
+    console.log('Structured course data:', structuredCourseData);
+
+    // Return structured data to be used in the UI
+    return {
+      courses: structuredCourseData,
+      courseId: courseIdStr,
+      message: 'Fetching course for view was successful',
+      success: true
+    };
+
+  } catch (error) {
+    console.error('Error fetching course details for view:', error);
+    return {
+      success: false,
+      message: "Error fetching course details. Please try again.",
+    };
+  }
+}
+
+
+
+async report(data:ReportData){
+  try{
+      console.log('try');
+      const result =await this.courseRepo.report(data)
+      return result            
+  }catch(error){
+      console.log('catch');
+      
+  }
+}
+
+async reportCourses() {
+  try {
+      console.log('try');
+      
+      // Retrieve the report data with thumbnails as S3 keys
+      const result = await this.courseRepo.reportCourses();
+
+      // Ensure `result` is an array before proceeding
+      if (!Array.isArray(result)) {
+          console.log('Invalid report data:', result);
+          return { success: false, message: 'Failed to retrieve course reports.' };
+      }
+
+      // Replace each `thumbnail` key with a signed URL
+      const reportsWithSignedUrls = await Promise.all(
+          result.map(async (report) => {
+              // Get signed URL for the S3 key in `thumbnail`
+              const signedUrl = await this.getObjectSignedUrl(report.thumbnail);
+              
+              // Return the report with the updated `thumbnail`
+              return {
+                  ...report,
+                  thumbnail: signedUrl
+              };
+          })
+      );
+
+      console.log(reportsWithSignedUrls, "final-----------------------");
+      return reportsWithSignedUrls;
+
+  } catch (error) {
+      console.error('Error in reportCourses:', error);
+      return { success: false, message: 'Error fetching course reports with signed URLs.' };
+  }
+}
+
+
+
+async graphCourses(data:any){
+  try{
+      console.log('try',data);
+      const result =await this.courseRepo.graphCourses(data)
+      return result            
+  }catch(error){
+      console.log('catch');
+      
+  }
+}
+
+
+
+async notifyCourseData(data:{roomId:string}){
+  try{
+      console.log('try',data);
+      const {roomId} = data
+      const result =await this.courseRepo.notifyCourseData(roomId)
+      return result            
+  }catch(error){
+      console.log('catch');
+      
+  }
+}
 
 }
+
+
 

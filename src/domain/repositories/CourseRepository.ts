@@ -1,7 +1,9 @@
-import { Course } from "../../model/course";
-import { ICourse,courseId,MyCoursesResponse,Ilesson,ISections} from "../entities/ICourse";
+import { Course,ICourseDocument} from "../../model/course";
+import {CourseReport} from "../../model/report";
+import { ICourse,courseId,MyCoursesResponse,Ilesson,ISections,ReportData,ReportWithCourseData, ICourseReport} from "../entities/ICourse";
 import { ICourseRepository} from "./ICourseRepository";
 import mongoose from "mongoose";
+import { ObjectId } from 'mongodb';
 
 
 
@@ -258,7 +260,214 @@ async fetchMyCourseData(courseIds: mongoose.Schema.Types.ObjectId[]) {
 
 
 
-  
+async userMyCourses(data:any) {
+  try {
+
+    console.log(data,"dataaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
+      // Check if data.myCourse is defined and is an array
+      if (!data.courses || !Array.isArray(data.courses)) {
+          console.log('myCourse is undefined or not an array');
+          return {
+              success: false,
+              message: 'Invalid course data received.',
+          };
+      }
+
+      // Extract courseId from the myCourse data
+      const courseIds = data.courses.map((course: any) => course.courseId); // Specify type for course
+
+      // Fetch courses using the courseIds and select required fields
+      const courses = await Course.find(
+          { _id: { $in: courseIds } },
+          '_id courseName courseDescription thumbnail courseCategory courseLevel' // Specify fields to select
+      );
+
+      console.log('Fetched Courses:', courses);
+
+      if (courses.length > 0) {
+          return {
+              courses: courses,
+              message: 'Fetching courses was successful',
+              success: true,
+          };
+      } else {
+          return {
+              message: 'No courses found for the user',
+              success: false,
+          };
+      }
+  } catch (error) {
+      console.log('Fetch all courses error:', error);
+      return {
+          success: false,
+          message: "Error fetching courses. Please try again.",
+      };
+  }
+}
+
+
+
+async  fetchCourseDetails(courseId: string) {
+  try {
+    const courseData = await Course.findById(courseId).where({ isListed: true });
+    console.log('Course Data:', courseData);
+
+    if (courseData) {
+      return { course: courseData, message: 'Course fetched successfully', success: true };
+    } else {
+      return { success: false, message: 'Course not found or not listed' };
+    }
+  } catch (error) {
+    console.error('Error fetching course by ID:', error);
+    return { success: false, message: 'Error fetching course details. Please try again.' };
+  }
+}
+
+
+
+async  courseViewDetails(courseId: string) {
+  try {
+
+    console.log(courseId,"-------------------------------------------------------------")
+    const courseData = await Course.findById(courseId).where({ isListed: true });
+    console.log('Course Data:', courseData);
+
+    if (courseData) {
+      return { courses: courseData,courseId:courseId, message: 'Course fetched successfully', success: true };
+    } else {
+      return { success: false, message: 'Course not found or not listed' };
+    }
+  } catch (error) {
+    console.error('Error fetching course by ID:', error);
+    return { success: false, message: 'Error fetching course details. Please try again.' };
+  }
+}
+
+
+async report(data: ReportData) {
+  try {
+    const { courseId, userId, username, email, reason, description } = data;
+
+    const newReport = new CourseReport({
+      courseId,
+      userId,
+      username,
+      email,
+      reason,
+      description,
+      createdAt: new Date()
+    });
+
+    await newReport.save();
+
+    return { success: true, message: 'Report submitted successfully.' };
+  } catch (error) {
+    console.error('Error saving report:', error);
+    return { success: false, message: 'Error submitting the report. Please try again.' };
+  }
+}
+
+
+async reportCourses(): Promise<ReportWithCourseData[] | { success: boolean; message: string }> {
+  try {
+      // Explicitly type the course reports
+      const courseReports = await CourseReport.find({}).lean().exec() as ICourseReport[];
+
+      if (!courseReports.length) {
+          return { success: true, message: 'No course reports found.' };
+      }
+
+      // Extract course IDs and ensure they're ObjectIds
+      const courseIds = courseReports.map(report => 
+          new mongoose.Types.ObjectId(report.courseId)
+      );
+
+      // Fetch courses with `isListed` included
+      const courses = await Course.find({ 
+          _id: { $in: courseIds } 
+      })
+      .select('courseName thumbnail isListed')  // Include `isListed`
+      .lean()
+      .exec() as (Pick<ICourseDocument, '_id' | 'courseName' | 'thumbnail' | 'isListed'>)[];
+
+      // Create a type-safe mapping
+      const courseMap = new Map<string, { courseName: string; thumbnail: string; isListed: boolean }>();
+      
+      courses.forEach((course) => {
+          const courseId = (course._id as mongoose.Types.ObjectId).toString(); // Assert `_id` type
+          courseMap.set(courseId, {
+              courseName: course.courseName,
+              thumbnail: course.thumbnail,
+              isListed: course.isListed
+          });
+      });
+
+      // Map the reports with proper type safety, including `isListed`
+      const reportsWithCourseData: ReportWithCourseData[] = courseReports.map(report => {
+          const courseDetails = courseMap.get(report.courseId.toString());
+          
+          return {
+              courseId: report.courseId.toString(),
+              courseName: courseDetails?.courseName || 'Unknown Course',
+              thumbnail: courseDetails?.thumbnail || 'default_thumbnail.jpg',
+              isListed: courseDetails?.isListed ?? false,  // Default to `false` if `isListed` is not available
+              userId: report.userId.toString(),
+              username: report.username,
+              email: report.email,
+              reason: report.reason,
+              description: report.description,
+              createdAt: report.createdAt
+          };
+      });
+
+      console.log(reportsWithCourseData,"final-----------------------")
+
+      return reportsWithCourseData;
+
+  } catch (error) {
+      console.error('Error fetching course reports:', error);
+      return { success: false, message: 'Error fetching course reports. Please try again.' };
+  }
+}
+
+
+
+async  graphCourses(data: any) {
+  try {
+    // Assume `db` is your MongoDB database connection
+    const updatedData = await Promise.all(
+      data.map(async (item: { courseId: ObjectId, totalStudents: number }) => {
+        // Fetch the course details by courseId
+        const course = await Course.findOne({ _id: item.courseId });
+        
+        // Add courseName to the item if found, otherwise default to an empty string
+        return {
+          ...item,
+          courseName: course ? course.courseName : ''
+        };
+      })
+    );
+
+    return updatedData;
+  } catch (error) {
+    console.error('Error fetching courses:', error);
+    return { success: false, message: 'Error submitting the report. Please try again.' };
+  }
+}
+
+async  notifyCourseData(roomId:string) {
+  try {
+     const courseName = await Course.findOne({ _id: roomId }).select('courseName thumbnail isListed') ;
+     return courseName
+  } catch (error) {
+    console.error('Error fetching courses:', error);
+    return { success: false, message: 'Error submitting the report. Please try again.' };
+  }
+}
+
+
+
+
 }
 
 
