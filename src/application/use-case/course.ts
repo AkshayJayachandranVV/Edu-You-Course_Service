@@ -1,6 +1,6 @@
 import {CourseRepository} from "../../domain/repositories/CourseRepository";
-import { ICourse,courseId,ICourseData,ReportData} from "../../domain/entities/ICourse";
-import mongoose, { Document } from "mongoose";
+import { ICourse,courseId,ICourseData,ReportData,ReviewData,} from "../../domain/entities/ICourse";
+import mongoose, { AnyBulkWriteOperation, Document } from "mongoose";
 
 
 import { S3Client, GetObjectCommand,PutObjectCommand} from '@aws-sdk/client-s3'
@@ -47,27 +47,14 @@ export class CourseService {
           return
         }
     
-        // Check if the result contains a success flag and the courses array
         if (result.success && result.courses) {
-          // Map through the courses to generate signed URLs for the thumbnail
-          // const coursesWithSignedThumbnails = await Promise.all(result.courses.map(async (course: any) => {
-          //   if (course.thumbnail) {
-          //     // Generate the signed URL for the thumbnail using the S3 key stored in the thumbnail field
-          //     const signedThumbnailUrl = await this.getObjectSignedUrl(course.thumbnail);
-    
-          //     // Replace the thumbnail value with the signed URL
-          //     course.thumbnail = signedThumbnailUrl;
-          //   }
-          //   return course; // Return the modified course
-          // }));
     
           return {
             ...result,
-            courses: result.courses // Return the updated courses array
+            courses: result.courses 
           };
         }
     
-        // Return the original result if it doesn't contain courses or success is false
         return result;
     
       } catch (error) {
@@ -79,9 +66,11 @@ export class CourseService {
     
     
 
-    async courseDetails(data: { courseId: string }) {
+    async courseDetails(data: courseId) {
       try {
           const result = await this.courseRepo.courseDetails(data);
+
+          console.log("git it ",result)
   
           if (result?.courses) {
               // Extract the S3 key and generate a signed URL for the thumbnail
@@ -118,12 +107,13 @@ export class CourseService {
   
   
 
-async allCourses() {
+async allCourses(data:any) {
     try {
       console.log('try');
   
       // Fetch all courses from the repository
-      const result = await this.courseRepo.allCourses();
+      const result = await this.courseRepo.allCourses(data);
+
   
       // If result is undefined, return an empty array as fallback
       if (!result || !result.courses) {
@@ -145,7 +135,9 @@ async allCourses() {
       );
   
       // Return updated courses array
-      return coursesWithSignedThumbnails;
+        return {totalCount:result.totalCount,courses:coursesWithSignedThumbnails};
+      
+      
   
     } catch (error) {
       console.log('catch', error);
@@ -187,6 +179,7 @@ async allCourses() {
         return {
             success: true,
             courses: updatedCourses,
+            totalCount:response.totalCount
         };
     } else {
         console.error(response.message);
@@ -195,19 +188,43 @@ async allCourses() {
 }
 
 
-async listCourse(data:courseId){
-  try{
-      console.log('try');
-      const result =await this.courseRepo.listCourse(data)
-      return result
-      
-  }catch(error){
-      console.log('catch');
-      
+async listCourse(data: any) {
+  try {
+    console.log("try");
+
+    // Fetch paginated course data from repository
+    const result = await this.courseRepo.listCourse(data);
+
+    if (!result.success) {
+      return result; // If repository call fails, return the result as is
+    }
+
+    // Map through the courses and update thumbnail to S3 signed URL
+    const updatedCourses = await Promise.all(
+      result.courses.map(async (course: any) => {
+        course.thumbnail = await this.getObjectSignedUrl(course.thumbnail);
+        return course;
+      })
+    );
+
+    // Return updated data with signed URLs
+    return {
+      ...result,
+      courses: updatedCourses,
+    };
+  } catch (error) {
+    console.error("Error in listCourse:", error);
+    return {
+      success: false,
+      message: "An error occurred while fetching courses.",
+      totalCount: 0,
+      courses: [],
+    };
   }
 }
 
-async courseDataEdit(data: string) {
+
+async courseDataEdit(data: { courseId: string }) {
   try {
     console.log('courseDataEdit------------------edit --------------------------');
 
@@ -537,6 +554,67 @@ async notifyCourseData(data:{roomId:string}){
       console.log('try',data);
       const {roomId} = data
       const result =await this.courseRepo.notifyCourseData(roomId)
+      return result            
+  }catch(error){
+      console.log('catch');
+      
+  }
+}
+
+
+async storeReview(data: ReviewData) {
+  try {
+    console.log("Received data:", data);  // Log incoming data to check all fields
+
+    // Correct the destructuring to match the received data structure
+    const { courseId, rating, reviewText, id, username, profilePicture } = data;
+
+    if (!rating) {
+      console.error("Rating is missing or undefined.");
+      return { success: false, message: "Rating is required." };
+    }
+
+    // Pass the correct field names to the repository method
+    const result = await this.courseRepo.storeReview(
+      courseId,
+      id,
+      username,
+      profilePicture,
+      rating,
+      reviewText
+    );
+    return result;
+  } catch (error) {
+    console.log("Error in storeReview method:", error);
+    return { success: false, message: "Error submitting the review. Please try again." };
+  }
+}
+
+
+
+
+
+async fetchReview(data:courseId){
+  try{
+      console.log('try',data);
+      const {courseId} = data
+
+
+      const result =await this.courseRepo.fetchReview(courseId)
+      return result            
+  }catch(error){
+      console.log('catch');
+      
+  }
+}
+
+
+async TotalCourses(){
+  try{
+      console.log('try');
+
+
+      const result =await this.courseRepo.TotalCourses()
       return result            
   }catch(error){
       console.log('catch');

@@ -2,6 +2,7 @@ import express from 'express'
 import config from '../config/config';
 import { databaseConnection } from '../database/mongodb'
 import RabbitMQClient from '../rabbitMQ/client'
+import { startGrpcServer } from '../grpc/client/grpcServer';
 
 
 
@@ -13,10 +14,12 @@ const startServer = async () =>{
     try{
 
         console.log(" COURSE SERVER STARTING ------")
+        console.log("123")
 
         await databaseConnection();
 
-         //rabbitmq initalization
+        startGrpcServer();
+
         RabbitMQClient.initialize()
 
         const port = config.port

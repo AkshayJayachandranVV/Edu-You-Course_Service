@@ -4,6 +4,7 @@ import { ICourse,courseId,MyCoursesResponse,Ilesson,ISections,ReportData,ReportW
 import { ICourseRepository} from "./ICourseRepository";
 import mongoose from "mongoose";
 import { ObjectId } from 'mongodb';
+import {CourseReview} from "../../model/review";
 
 
 
@@ -68,14 +69,12 @@ async userCourse(){
 }
 
 
-async courseDetails(data:any){
+async courseDetails(data:courseId){
   try{
 
     const {courseId} = data
       const courseDetails=await Course.findOne({_id:courseId});
-      console.log('courseDetails',courseDetails
-
-      )
+      console.log('courseDetail tests',courseDetails)
       if(courseDetails){
           return {courses:courseDetails,courseId:courseDetails._id,message:'Fetching course  went successfult',success:true}
       }
@@ -87,31 +86,45 @@ async courseDetails(data:any){
 }
 
 
-async allCourses(){
-  try{
+async allCourses(data: { skip: number; limit: number }) {
+  try {
+    const { skip, limit } = data;
 
-      const allCourses=await Course.find({isListed:true});
-      console.log('allCourses',allCourses)
+    // Fetch the total count of listed courses (for pagination metadata)
+    const totalCourses = await Course.countDocuments({ isListed: true });
+
+    // Fetch the paginated courses using skip and limit
+    const courses = await Course.find({ isListed: true })
+      .skip(skip)
+      .limit(limit);
 
 
+      console.log(courses,"kitty poyo")
 
-      if(allCourses){
-          return {courses:allCourses,message:'Fetching course  went successfult',success:true}
-      }
-  }catch(error){
-      console.log('fetch all course error',error);
-      return { success: false, message: "Course fetch courses. Please try again" };
-      
+    if (courses) {
+      return {
+        courses, // Paginated courses
+        totalCount: totalCourses, // Total count of courses
+        message: "Courses fetched successfully",
+        success: true,
+      };
+    }
+  } catch (error) {
+    console.error("Error fetching courses:", error);
+    return { success: false, message: "Failed to fetch courses. Please try again." };
   }
 }
 
 
-async tutorMyCourses(data: any): Promise<MyCoursesResponse> {
+
+async tutorMyCourses(data: any): Promise<any> {
   try {
-      const { tutorId } = data;
+      const { tutorId,skip,limit} = data;
       const courseDetails = await Course.find({ tutorId })
-          .select('courseName thumbnail coursePrice courseDiscountPrice courseCategory courseLevel createdAt isListed')
+          .select('courseName thumbnail coursePrice courseDiscountPrice courseCategory courseLevel createdAt isListed').skip(skip).limit(limit)
           .exec();
+      
+          const totalCount = await Course.countDocuments({tutorId});
 
       // Convert Mongoose documents to plain objects if necessary
       const courses = courseDetails.map(course => course.toObject()); // Use toObject()
@@ -120,6 +133,7 @@ async tutorMyCourses(data: any): Promise<MyCoursesResponse> {
           courses: courses || [], // Ensure this is an array
           message: 'Fetching courses went successfully',
           success: true,
+          totalCount
       };
   } catch (error) {
       console.error('Fetch all course error:', error);
@@ -127,28 +141,38 @@ async tutorMyCourses(data: any): Promise<MyCoursesResponse> {
   }
 }
 
-async listCourse(data:courseId){
-  try{
+async listCourse(data: any) {
+  try {
+    const { skip , limit , tutorId } = data;
 
-    const {courseId} = data
-    console.log(courseId)
-      const courseDetails=await Course.findOne({_id:courseId});
-      console.log('courseDetails',courseDetails)
+    console.log("tutors")
 
-        if(!courseDetails){
-          return { success: false, message: 'Course not found' };          
-        }
+    // Fetch the total count of documents
+    const totalCount = await Course.countDocuments();
 
-        const isList = !courseDetails.isListed;
+    // Fetch courses with pagination
+    const courses = await Course.find({tutorId})
+      .skip(skip)
+      .limit(limit);
 
-        await Course.updateOne({_id:courseId}, { $set: { isListed: isList } });
-     
-          return {courseId:courseId,message: isList ? "Successfully List the course" : "Successfully Unlist the course",success:true}
-      
-  }catch(error){
-      console.log('fetch all course error',error);
-      return { success: false, message: "Course fetch courses. Please try again" };
-      
+    if (!courses || courses.length === 0) {
+      return { success: false, message: "No courses found", totalCount: 0, courses: [] };
+    }
+
+    return {
+      success: true,
+      message: "Courses fetched successfully",
+      totalCount, // Total count of all courses
+      courses, // Paginated course data
+    };
+  } catch (error) {
+    console.error("Fetch courses error:", error);
+    return {
+      success: false,
+      message: "Failed to fetch courses. Please try again.",
+      totalCount: 0,
+      courses: [],
+    };
   }
 }
 
@@ -468,6 +492,87 @@ async  notifyCourseData(roomId:string) {
 
 
 
+async storeReview(
+  courseId: string,
+  id: string,
+  username: string,
+  profilePicture: string,
+  userRating: number,
+  reviewText: string
+) {
+  try {
+    console.log("Review Data Check:", {
+      courseId,
+      id,
+      username,
+      profilePicture,
+      userRating,
+      reviewText
+    });
+
+    // Check if the user has already submitted a review for this course
+    const existingReview = await CourseReview.findOne({
+      courseId: new mongoose.Types.ObjectId(courseId),
+      userId: new mongoose.Types.ObjectId(id),
+    });
+
+    if (existingReview) {
+      return { success: false, message: "Can't give more than one review." };
+    }
+
+    // If no existing review, create a new review
+    const review = new CourseReview({
+      courseId: new mongoose.Types.ObjectId(courseId),
+      userId: new mongoose.Types.ObjectId(id),
+      username,
+      profilePicture,
+      rating: userRating,
+      reviewText,
+    });
+
+    // Save the review to the database
+    await review.save();
+
+    return { success: true, message: "Review submitted successfully.", review };
+  } catch (error) {
+    console.error("Error submitting review:", error);
+    return { success: false, message: "Error submitting the review. Please try again." };
+  }
 }
+
+
+
+
+
+async fetchReview(courseId: string) {
+  try {
+    // Find all reviews matching the given courseId
+    console.log("kakallalalal")
+    const reviews = await CourseReview.find({ courseId: new mongoose.Types.ObjectId(courseId) });
+
+    return { success: true, message: 'Reviews fetched successfully.', reviews };
+  } catch (error) {
+    console.error('Error fetching reviews:', error);
+    return { success: false, message: 'Error fetching the reviews. Please try again.' };
+  }
+}
+
+
+async TotalCourses() {
+  try {
+    const totalListedCourses = await Course.countDocuments({ isListed: true });
+
+    console.log("Total number of listed courses:", totalListedCourses);
+    return totalListedCourses || 0 ;
+  } catch (error) {
+    console.error('Error fetching total courses:', error);
+    return { success: false, message: 'Error fetching the total courses. Please try again.' };
+  }
+}
+
+
+}
+
+
 
 

@@ -78,6 +78,17 @@ export interface ICourseReport extends Document {
     createdAt: Date;
   }
 
+
+export interface ICourseReview extends Document {
+    courseId: mongoose.Types.ObjectId;
+    userId: mongoose.Types.ObjectId;
+    username: string;
+    profilePicture?: string;
+    rating: number;
+    reviewText: string;
+    createdAt: Date;
+  }
+
   
 
 export interface courseId {
@@ -120,3 +131,84 @@ export interface ReportData {
     description: string;
   }
   
+
+export interface ReviewData {
+  courseId: string;
+  rating: number;
+  reviewText: string;
+  id: string;
+  username: string;
+  profilePicture: string;
+}
+
+
+export interface CourseResponse {
+  message: string;
+  success: boolean;
+  courses: Course[];
+}
+
+export interface Course {
+  _id: string;
+  tutorId: string;
+  courseName: string;
+  courseDescription: string;
+  thumbnail: string;
+  coursePrice: number;
+  courseDiscountPrice: number;
+  courseCategory: string;
+  isListed: boolean;
+  courseLevel: string;
+  demoURL: string;
+  prerequisites: string[];
+  benefits: string[];
+  sections: Section[];
+  createdAt: string;
+  updatedAt: string;
+  __v: number;
+  students: string[];
+}
+
+export interface Section {
+  title: string;
+  content: string;
+}
+
+
+
+export interface CourseDetailRequest {
+  courseId: string;
+}
+
+export interface CourseResponse {
+  message: string;
+  success: boolean;
+  courses: Course[];
+  totalCount: number;
+}
+
+export interface Course {
+  _id: string;
+  tutorId: string;
+  courseName: string;
+  courseDescription: string;
+  thumbnail: string;
+  coursePrice: number;
+  courseDiscountPrice: number;
+  courseCategory: string;
+  isListed: boolean;
+  courseLevel: string;
+  demoURL: string;
+  prerequisites: string[];
+  benefits: string[];
+  sections: Section[];
+  createdAt: string;
+  updatedAt: string;
+  __v: number;
+  students: string[];
+}
+
+export interface Section {
+  title: string;
+  content: string;
+}

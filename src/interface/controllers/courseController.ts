@@ -1,5 +1,7 @@
 import {CourseService} from "../../application/use-case/course"
-import {ReportData} from "../../domain/entities/ICourse";
+import {ReportData,ReviewData,courseId,CourseDetailRequest,CourseResponse} from "../../domain/entities/ICourse";
+import { ServerUnaryCall, sendUnaryData } from "@grpc/grpc-js";
+import * as grpc from '@grpc/grpc-js';
 
 
 class CourseController {
@@ -23,48 +25,81 @@ class CourseController {
         }
     }
 
-    async useCourse(){
+    async useCourse(call: any, callback: any): Promise<void> {
         try {
-            
-            console.log('in controlerrr');
+            console.log("Request received for useCourse");
+    
+            // Call the course service to fetch courses
             const result = await this.courseService.userCourse();
-            console.log('got result from course.ts for addocourse');
-         
-            return result
-        }catch(error){
-            console.log('error in addcourse',error);
     
+            console.log("Result received from courseService:", result);
+    
+            // Send the result back to the gRPC client
+            return callback(null, result);
+        } catch (error) {
+            console.error("Error in useCourse:", error);
+    
+            // Handle and return the error in the gRPC format
+            return callback({
+                code: grpc.status.INTERNAL,
+                message: error instanceof Error ? error.message : "Unknown error occurred",
+            });
         }
     }
+    
 
 
-    async courseDetails(data:any){
+    async courseDetails(call: any,callback: any) {
         try {
-            
-            console.log('in controlerrr');
-            const result = await this.courseService.courseDetails(data);
-            console.log('got result from course.ts for addocourse');
-            
-            return result
-        }catch(error){
-            console.log('error in addcourse',error);
-    
+          console.log("in lalalal controller ------------",call.request);
+      
+          const data = call.request; 
+      
+          // Call the service method
+          const result: any = await this.courseService.courseDetails(data);
+      
+          console.log(result,"Got result from course.ts for courseDetails");
+      
+          // Use the callback to send the response
+          return callback(null, result);
+        } catch (error) {
+          console.error("Error in courseDetails:", error);
+      
+          // Send an error response using the callback
+          return callback({
+            code: 13, // Internal server error code
+            message: "Failed to fetch course details. Please try again later.",
+          } as any);
         }
-    }
+      }
 
-    async allCourses(data:any){
+
+
+    async allCourses(call: any, callback: any): Promise<void> {
         try {
-            
-            console.log('in controlerrr');
-            const result = await this.courseService.allCourses();
-            console.log('got result from course.ts for addocourse');
-            
-            return result
-        }catch(error){
-            console.log('error in addcourse',error);
+            console.log("Request received for allCourses");
+
+            const data = call.request;
     
+    
+            // Call the course service to fetch all courses
+            const result = await this.courseService.allCourses(data);
+    
+            // console.log("Result received from courseService:", result);
+    
+            // Send the result back to the gRPC client
+            return callback(null, result);
+        } catch (error) {
+            // console.error("Error in allCourses:", error);
+    
+            // Handle and return the error in the gRPC format
+            return callback({
+                code: grpc.status.INTERNAL,
+                message: error instanceof Error ? error.message : "Unknown error occurred",
+            });
         }
     }
+    
 
 
     async tutorMyCourses(data:any){
@@ -236,6 +271,49 @@ class CourseController {
         try {
             
             const result = await this.courseService.notifyCourseData(data);
+            console.log('got result from course.ts for graph courses');
+            
+            return result
+        }catch(error){
+            console.log('error in addcourse',error);
+    
+        }
+    }
+
+
+    async storeReview(data:ReviewData){
+        try {
+            
+            const result = await this.courseService.storeReview(data);
+            console.log('got result from course.ts for graph courses');
+            
+            return result
+        }catch(error){
+            console.log('error in addcourse',error);
+    
+        }
+    }
+
+
+    async fetchReview(data:courseId){
+        try {
+            
+            const result = await this.courseService.fetchReview(data);
+            console.log('got result from course.ts for graph courses');
+            
+            return result
+        }catch(error){
+            console.log('error in addcourse',error);
+    
+        }
+    }
+
+
+
+    async TotalCourses(){
+        try {
+            
+            const result = await this.courseService.TotalCourses();
             console.log('got result from course.ts for graph courses');
             
             return result
