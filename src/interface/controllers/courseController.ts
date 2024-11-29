@@ -25,7 +25,7 @@ class CourseController {
         }
     }
 
-    async useCourse(call: any, callback: any): Promise<void> {
+    async useCourse(): Promise<any> {
         try {
             console.log("Request received for useCourse");
     
@@ -35,25 +35,18 @@ class CourseController {
             console.log("Result received from courseService:", result);
     
             // Send the result back to the gRPC client
-            return callback(null, result);
+            return result
         } catch (error) {
             console.error("Error in useCourse:", error);
     
-            // Handle and return the error in the gRPC format
-            return callback({
-                code: grpc.status.INTERNAL,
-                message: error instanceof Error ? error.message : "Unknown error occurred",
-            });
         }
     }
     
 
 
-    async courseDetails(call: any,callback: any) {
+    async courseDetails(data:any) {
         try {
-          console.log("in lalalal controller ------------",call.request);
-      
-          const data = call.request; 
+          console.log("in lalalal controller ------------");
       
           // Call the service method
           const result: any = await this.courseService.courseDetails(data);
@@ -61,25 +54,18 @@ class CourseController {
           console.log(result,"Got result from course.ts for courseDetails");
       
           // Use the callback to send the response
-          return callback(null, result);
+          return result
         } catch (error) {
           console.error("Error in courseDetails:", error);
       
-          // Send an error response using the callback
-          return callback({
-            code: 13, // Internal server error code
-            message: "Failed to fetch course details. Please try again later.",
-          } as any);
         }
       }
 
 
 
-    async allCourses(call: any, callback: any): Promise<void> {
+    async allCourses(data: any): Promise<any> {
         try {
             console.log("Request received for allCourses");
-
-            const data = call.request;
     
     
             // Call the course service to fetch all courses
@@ -88,15 +74,12 @@ class CourseController {
             // console.log("Result received from courseService:", result);
     
             // Send the result back to the gRPC client
-            return callback(null, result);
+            return result
         } catch (error) {
-            // console.error("Error in allCourses:", error);
+            console.error("Error in allCourses:", error);
     
             // Handle and return the error in the gRPC format
-            return callback({
-                code: grpc.status.INTERNAL,
-                message: error instanceof Error ? error.message : "Unknown error occurred",
-            });
+            
         }
     }
     
@@ -194,9 +177,8 @@ class CourseController {
 
 
     // gRPC handler function for userMyCourses
-    async userMyCourses(call: { request: MyCoursesRequest }, callback: (error: any, response: MyCourseFetchResponse) => void) {
+    async userMyCourses(data:any) {
         try {
-          const data: MyCoursesRequest = call.request; // The incoming request data
           
           console.log(data, 'in controller');
       
@@ -212,7 +194,7 @@ class CourseController {
           console.log('Got result from course.ts for userMyCourses');
           
           // Return the result to the gRPC client
-          callback(null, response);
+          return response
         } catch (error) {
           console.log('Error in userMyCourses:', error);
         }

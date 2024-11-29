@@ -12,17 +12,23 @@ export default class MessageHandlers{
                 console.log("data reached ",response);
                 break;
 
-            // case 'user-course' :
-            //     console.log('Handling operation',operations,data);
-            //     response = await courseController.useCourse()
-            //     console.log("data reached ",response);
-            //     break;
+            case 'user-course' :
+                console.log('Handling operation',operations,data);
+                response = await courseController.useCourse()
+                console.log("data reached ",response);
+                break;
 
-            // case 'course-details' :
-            //     console.log('Handling operation',operations,data);
-            //     response = await courseController.courseDetails(data)
-            //     console.log("data reached ",response);
-            //     break;
+            case 'all-courses' :
+                console.log('Handling operation',operations,data);
+                response = await courseController.allCourses(data)
+                console.log("data reached ",response);
+                break;
+
+            case 'course-details' :
+                console.log('Handling operation',operations,data);
+                response = await courseController.courseDetails(data)
+                console.log("data reached ",response);
+                break;
             case 'tutor-courses' :
                 console.log('Handling operation',operations,data);
                 response = await courseController.tutorMyCourses(data)
@@ -99,6 +105,11 @@ export default class MessageHandlers{
             case 'admin-total-courses' :
                 console.log('Handling operation',operations,data);
                 response = await courseController.TotalCourses()
+                console.log("data reached ",response);
+                break;
+            case 'fetch-user-myCourse' :
+                console.log('Handling operation',operations,data);
+                response = await courseController.userMyCourses(data)
                 console.log("data reached ",response);
                 break; 
         }
