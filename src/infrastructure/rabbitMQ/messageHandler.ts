@@ -61,11 +61,6 @@ export default class MessageHandlers{
                 response = await courseController.fetchMyCourseData(data)
                 console.log("data reached ",response);
                 break;
-            case 'fetch-user-myCourse' :
-                console.log('Handling operation',operations,data);
-                response = await courseController.userMyCourses(data)
-                console.log("data reached ",response);
-                break;
             case 'course-view-details' :
                 console.log('Handling operation',operations,data);
                 response = await courseController.courseViewDetails(data)

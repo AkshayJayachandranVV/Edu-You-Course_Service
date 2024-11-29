@@ -1,5 +1,23 @@
 import mongoose from "mongoose";
 
+
+
+export interface MyCourse {
+  courseId: string;
+}
+
+export interface MyCoursesRequest {
+  success: boolean;
+  courses: MyCourse[];
+}
+
+export interface MyCourseFetchResponse {
+  success: boolean;
+  courses: MyCourse[]; 
+}
+
+
+
 export interface ISections{
     title:string;
     description:string;
@@ -35,6 +53,7 @@ export interface ICourse extends Document { // Extend Document here
 }
 
 export interface ICourseData {
+    averageRating?: number;
     tutorId: string;
     courseName: string;  // Add this property
     courseDescription: string;  // Add this property

@@ -25,6 +25,7 @@ server.addService(courseProto.CourseService.service, {
     userCourse: courseController.useCourse.bind(courseController),
     allCourses: courseController.allCourses.bind(courseController),
     courseDetails: courseController.courseDetails.bind(courseController),
+    myCourseFetch: courseController.userMyCourses.bind(courseController),
 });
 
 const startGrpcServer = () => {

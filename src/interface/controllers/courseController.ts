@@ -1,5 +1,5 @@
 import {CourseService} from "../../application/use-case/course"
-import {ReportData,ReviewData,courseId,CourseDetailRequest,CourseResponse} from "../../domain/entities/ICourse";
+import {ReportData,ReviewData,courseId,MyCoursesRequest,MyCourseFetchResponse} from "../../domain/entities/ICourse";
 import { ServerUnaryCall, sendUnaryData } from "@grpc/grpc-js";
 import * as grpc from '@grpc/grpc-js';
 
@@ -193,19 +193,32 @@ class CourseController {
     }
 
 
-    async userMyCourses(data: any){
+    // gRPC handler function for userMyCourses
+    async userMyCourses(call: { request: MyCoursesRequest }, callback: (error: any, response: MyCourseFetchResponse) => void) {
         try {
-            
-            console.log(data,'in controlerrr');
-            const result = await this.courseService.userMyCourses(data);
-            console.log('got result from course.ts for addocourse');
-            
-            return result
-        }catch(error){
-            console.log('error in addcourse',error);
-    
+          const data: MyCoursesRequest = call.request; // The incoming request data
+          
+          console.log(data, 'in controller');
+      
+          // Assuming courseService.userMyCourses returns a list of courses or an empty array
+          const result = await this.courseService.userMyCourses(data);
+      
+          // Ensure that the 'courses' field is always an array (even if empty)
+          const response: MyCourseFetchResponse = {
+            success: result.success,
+            courses: result.courses || []  // If result.courses is undefined, use an empty array
+          };
+      
+          console.log('Got result from course.ts for userMyCourses');
+          
+          // Return the result to the gRPC client
+          callback(null, response);
+        } catch (error) {
+          console.log('Error in userMyCourses:', error);
         }
-    }
+      }
+      
+  
 
 
     async courseViewDetails(data:{courseId:string}){

@@ -1,5 +1,5 @@
 import {CourseRepository} from "../../domain/repositories/CourseRepository";
-import { ICourse,courseId,ICourseData,ReportData,ReviewData,} from "../../domain/entities/ICourse";
+import { ICourse,courseId,ICourseData,ReportData,ReviewData,MyCoursesRequest} from "../../domain/entities/ICourse";
 import mongoose, { AnyBulkWriteOperation, Document } from "mongoose";
 
 
@@ -66,39 +66,39 @@ export class CourseService {
     
     
 
-    async courseDetails(data: courseId) {
+    async courseDetails(data: { courseId: string }) {
       try {
-          const result = await this.courseRepo.courseDetails(data);
-
-          console.log("git it ",result)
-  
-          if (result?.courses) {
-              // Extract the S3 key and generate a signed URL for the thumbnail
-              const thumbnailKey = result.courses.thumbnail;
-              const signedThumbnailUrl = await this.getObjectSignedUrl(thumbnailKey);
-  
-              // Build a new courses object with all required properties, adding thumbnailKey
-              const updatedCourses = {
-                  ...result.courses.toObject(),  // Convert to a plain object if necessary
-                  thumbnail: signedThumbnailUrl,
-                  thumbnailKey: thumbnailKey,    // Add the thumbnailKey here
-              };
-  
-              // Return the new result with updated courses object
-              return {
-                  ...result,
-                  courses: updatedCourses,  // Overwrite courses with the modified version
-              };
-          }
-  
-          return result;  // Return unmodified result if courses are not found
-  
+        const result = await this.courseRepo.courseDetails(data);
+    
+        console.log("Result:", result);
+    
+        if (result?.courses) {
+          // Convert Mongoose document to plain object if necessary
+          const coursesData =result.courses
+    
+          // Generate a signed URL for the thumbnail
+          const thumbnailKey = coursesData.thumbnail;
+          const signedThumbnailUrl = await this.getObjectSignedUrl(thumbnailKey);
+    
+          // Return the updated course details with the signed thumbnail URL
+          return {
+            ...result,
+            courses: {
+              ...coursesData,
+              thumbnail: signedThumbnailUrl,
+              thumbnailKey,
+            },
+          };
+        }
+    
+        return result; // Return unmodified result if no courses are found
       } catch (error) {
-          console.error("Failed to fetch course details", error);
-          throw new Error("Failed to fetch course details");
+        console.error("Failed to fetch course details:", error);
+        throw new Error("Failed to fetch course details");
       }
-  }
-  
+    }
+    
+    
   
   
   
@@ -362,40 +362,40 @@ async fetchMyCourseData(data: any) {
 }
 
 
-async userMyCourses(data: any) {
+async userMyCourses(data: MyCoursesRequest) {
   try {
-    console.log(data,"111111111111111111111111111111dataaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
-      const result = await this.courseRepo.userMyCourses(data);
+    console.log(data, "Data for fetching courses");
 
-      // Check if result.courses is defined and is an array
-      if (!result.courses || !Array.isArray(result.courses)) {
-          console.log('No courses found or invalid data structure.');
-          return { success: false, message: 'No courses available.' };
-      }
+    const result = await this.courseRepo.userMyCourses(data);
 
-      // Convert S3 keys to signed URLs for the thumbnails
-      const coursesWithSignedUrls = await Promise.all(
-          result.courses.map(async (course: any) => {
-              const signedUrl = await this.getObjectSignedUrl(course.thumbnail);
-              return {
-                  ...course, // Spread the course data
-                  thumbnail: signedUrl, // Replace thumbnail with signed URL
-              };
-          })
-      );
+    // Check if result.courses is defined and is an array
+    if (!result.courses || !Array.isArray(result.courses)) {
+      console.log('No courses found or invalid data structure.');
+      return { success: false, message: 'No courses available.' };
+    }
 
-      // Return the updated courses with signed URLs
-      return {
-          success: true,
-          courses: coursesWithSignedUrls,
-      };
+    // Convert S3 keys to signed URLs for the thumbnails
+    const coursesWithSignedUrls = await Promise.all(
+      result.courses.map(async (course: any) => {
+        // Replace the original thumbnail URL with the signed URL
+        const signedUrl = await this.getObjectSignedUrl(course.thumbnail);
+        course.thumbnail = signedUrl;  // Overwrite the existing thumbnail with the signed URL
+        return course;  // Return the updated course object
+      })
+    );
+
+    // Return the updated courses with signed URLs
+    return {
+      success: true,
+      courses: coursesWithSignedUrls,
+    };
 
   } catch (error) {
-      console.log('catch', error);
-      return {
-          success: false,
-          message: 'Error fetching courses. Please try again.',
-      };
+    console.log('Error in userMyCourses:', error);
+    return {
+      success: false,
+      message: 'Error fetching courses. Please try again.',
+    };
   }
 }
 

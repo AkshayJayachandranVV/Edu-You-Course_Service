@@ -52,38 +52,108 @@ export class CourseRepository implements ICourseRepository{
   
   
 
-async userCourse(){
-  try{
-      const allCourse=await Course.find({isListed:true}).limit(3);
-      console.log('allcourse',allCourse
+  async userCourse() {
+    try {
+      // Fetch courses where isListed is true, limit to 3 courses
+      const allCourses = await Course.find({ isListed: true }).limit(3);
+      console.log('All courses:', allCourses);
+  
+      if (allCourses && allCourses.length > 0) {
+        // Iterate through each course and fetch the average rating from the Review collection
+        const coursesWithRatings = await Promise.all(
+          allCourses.map(async (course) => {
+            // Find the reviews related to the current course
+            const reviews = await CourseReview.find({ courseId: course._id });
 
-      )
-      if(allCourse){
-          return {courses:allCourse,message:'Fetching course  went successfult',success:true}
+            console.log(reviews,course._id,"test test")
+  
+            // Calculate the average rating
+            let averageRating = 0;
+            if (reviews.length > 0) {
+              const totalRating = reviews.reduce((sum:any, review:any) => sum + review.rating, 0);
+              averageRating = totalRating / reviews.length; // Average of all ratings
+            }
+
+            console.log(averageRating)
+  
+            // Return the course with the average rating added
+            return {
+              ...course.toObject(), // Spread the course data
+              averageRating, // Add the average rating
+            };
+          })
+        );
+
+        console.log(coursesWithRatings,"popo")
+  
+        return {
+          courses: coursesWithRatings,
+          message: 'Courses fetched successfully',
+          success: true,
+        };
       }
-  }catch(error){
-      console.log('fetch all course error',error);
-      return { success: false, message: "Course fetch courses. Please try again" };
-      
+  
+      return {
+        courses: [],
+        message: 'No courses found.',
+        success: false,
+      };
+    } catch (error) {
+      console.log('Error fetching courses:', error);
+      return {
+        success: false,
+        message: 'Error fetching courses. Please try again.',
+      };
+    }
   }
-}
+  
 
 
-async courseDetails(data:courseId){
-  try{
-
-    const {courseId} = data
-      const courseDetails=await Course.findOne({_id:courseId});
-      console.log('courseDetail tests',courseDetails)
-      if(courseDetails){
-          return {courses:courseDetails,courseId:courseDetails._id,message:'Fetching course  went successfult',success:true}
+  async courseDetails(data: { courseId: string }) {
+    try {
+      const { courseId } = data;
+  
+      // Fetch the course details
+      const courseDetails = await Course.findOne({ _id: courseId });
+  
+      if (courseDetails) {
+        // Fetch all reviews for the course
+        const reviews = await CourseReview.find({ courseId });
+  
+        // Calculate the average rating
+        let averageRating = 0;
+        if (reviews.length > 0) {
+          const totalRating = reviews.reduce(
+            (sum: number, review: any) => sum + review.rating,
+            0
+          );
+          averageRating = totalRating / reviews.length;
+        }
+  
+        // Return the course with the average rating
+        return {
+          courses: { ...courseDetails.toObject(), averageRating },
+          courseId: courseDetails._id,
+          message: "Fetching course went successfully",
+          success: true,
+        };
       }
-  }catch(error){
-      console.log('fetch all course error',error);
-      return { success: false, message: "Course fetch courses. Please try again" };
-      
+  
+      // Return an error message if no course is found
+      return {
+        success: false,
+        message: "No course found.",
+      };
+    } catch (error) {
+      console.log("Fetch course error:", error);
+      return {
+        success: false,
+        message: "Course fetch error. Please try again.",
+      };
+    }
   }
-}
+  
+  
 
 
 async allCourses(data: { skip: number; limit: number }) {
@@ -98,22 +168,48 @@ async allCourses(data: { skip: number; limit: number }) {
       .skip(skip)
       .limit(limit);
 
+    if (courses && courses.length > 0) {
+      // Calculate the average rating for each course
+      const coursesWithRatings = await Promise.all(
+        courses.map(async (course) => {
+          // Fetch reviews for the current course
+          const reviews = await CourseReview.find({ courseId: course._id });
 
-      console.log(courses,"kitty poyo")
+          // Calculate the average rating
+          let averageRating = 0;
+          if (reviews.length > 0) {
+            const totalRating = reviews.reduce((sum: number, review: any) => sum + review.rating, 0);
+            averageRating = totalRating / reviews.length;
+          }
 
-    if (courses) {
+          // Return the course with the average rating added
+          return {
+            ...course.toObject(), // Spread the course data
+            averageRating, // Add the average rating
+          };
+        })
+      );
+
       return {
-        courses, // Paginated courses
+        courses: coursesWithRatings, // Paginated courses with average ratings
         totalCount: totalCourses, // Total count of courses
         message: "Courses fetched successfully",
         success: true,
       };
     }
+
+    return {
+      courses: [],
+      totalCount: totalCourses,
+      message: "No courses found.",
+      success: false,
+    };
   } catch (error) {
     console.error("Error fetching courses:", error);
     return { success: false, message: "Failed to fetch courses. Please try again." };
   }
 }
+
 
 
 

@@ -6,8 +6,27 @@ package course;
 service CourseService {
   rpc userCourse (EmptyRequest) returns (CourseResponse);
   rpc allCourses (pagination) returns (CourseResponse);
-  rpc courseDetails (CourseDetailRequest) returns (CourseDetailResponse);  
+  rpc courseDetails (CourseDetailRequest) returns (CourseDetailResponse);
+  rpc fetchReview (CourseDetailRequest) returns (CourseDetailResponse);  
+  rpc myCourseFetch (MyCoursesRequest) returns (myCourseFetchResponse);
 }
+
+
+message myCourseFetchResponse {
+  bool success = 1;                 
+  repeated Course courses = 2;    // List of courses
+}
+
+message MyCoursesRequest {
+  bool success = 1;                 
+  repeated MyCourse courses = 2;    
+}
+
+
+message MyCourse {
+  string courseId = 1; 
+}
+
 
 // Pagination message
 message pagination {
@@ -29,8 +48,9 @@ message CourseResponse {
 // Response message for Course Details (Specific Response for courseDetails)
 message CourseDetailResponse {
    string message = 1;
-    bool success = 2;
-   Course courses = 3;  // Single course object in response
+   bool success = 2;
+   Course courses = 3; 
+   string courseId = 4;
 }
 
 // Course message
@@ -52,6 +72,7 @@ message Course {
   repeated Student students = 15;  // List of enrolled students
   string createdAt = 16;  // Course creation date (timestamp)
   string updatedAt = 17;  // Last updated date (timestamp)
+  double averageRating = 18;
 }
 
 // Section message (for sections in the course)
