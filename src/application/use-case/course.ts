@@ -1,5 +1,7 @@
 import {CourseRepository} from "../../domain/repositories/CourseRepository";
-import { ICourse,courseId,ICourseData,ReportData,ReviewData,MyCoursesRequest} from "../../domain/entities/ICourse";
+import { ICourse,courseId,ICourseData,ReportData,ReviewData,MyCoursesRequest,TutorPagination,PaginationData,UserCourse,
+  GraphCourseInput
+} from "../../domain/entities/ICourse";
 import mongoose, { AnyBulkWriteOperation, Document } from "mongoose";
 
 
@@ -66,7 +68,7 @@ export class CourseService {
     
     
 
-    async courseDetails(data: { courseId: string }) {
+    async courseDetails(data:courseId) {
       try {
         const result = await this.courseRepo.courseDetails(data);
     
@@ -106,44 +108,51 @@ export class CourseService {
   
   
   
-
-async allCourses(data:any) {
-    try {
-      console.log('try');
-  
-      // Fetch all courses from the repository
-      const result = await this.courseRepo.allCourses(data);
-
-  
-      // If result is undefined, return an empty array as fallback
-      if (!result || !result.courses) {
-        return []; // Ensure that we return an empty array when result is undefined
+    async allCourses(data: PaginationData): Promise<any> {
+      try {
+        console.log('try');
+      
+        const result = await this.courseRepo.allCourses(data);
+    
+        // If result is undefined or empty courses, return a response with an empty array for courses
+        if (!result || !result.courses || result.courses.length === 0) {
+          return {
+            courses: [], // Empty array for courses
+            totalCount: 0, // No courses found
+            message: "No courses found.",
+            success: false,
+          };
+        }
+      
+        // Iterate over each course and replace the thumbnail key with signed URL
+        const coursesWithSignedThumbnails = await Promise.all(
+          result.courses.map(async (course: ICourse) => {
+            if (course.thumbnail) {
+              // Generate signed URL for the thumbnail
+              const signedThumbnailUrl = await this.getObjectSignedUrl(course.thumbnail);
+              // Replace the thumbnail key with the signed URL
+              course.thumbnail = signedThumbnailUrl;
+            }
+            return course;
+          })
+        );
+      
+        // Return the courses with signed thumbnails and average ratings
+        return {
+          totalCount: result.totalCount,
+          courses: coursesWithSignedThumbnails,
+          message: "Courses fetched successfully",
+          success: true,
+        };
+    
+      } catch (error) {
+        console.log('catch', error);
+        throw error; // Ensure the error is propagated
       }
-  
-      // Iterate over each course and replace the thumbnail key with signed URL
-      const coursesWithSignedThumbnails = await Promise.all(
-        result.courses.map(async (course: ICourse) => {
-          if (course.thumbnail) {
-            // Generate signed URL for the thumbnail
-            const signedThumbnailUrl = await this.getObjectSignedUrl(course.thumbnail);
-            // Replace the thumbnail key with the signed URL
-            console.log(signedThumbnailUrl)
-            course.thumbnail = signedThumbnailUrl;
-          }
-          return course;
-        })
-      );
-  
-      // Return updated courses array
-        return {totalCount:result.totalCount,courses:coursesWithSignedThumbnails};
-      
-      
-  
-    } catch (error) {
-      console.log('catch', error);
-      throw error; // Ensure the error is propagated
     }
-  }
+    
+
+
   
   async getObjectSignedUrl(key: string): Promise<string> {
     const params = {
@@ -158,8 +167,11 @@ async allCourses(data:any) {
   
     return url;
   }
+
+
+
   
-  async  tutorMyCourses(data: any) {
+  async  tutorMyCourses(data: TutorPagination) {
     const response = await this.courseRepo.tutorMyCourses(data);
     
     if (response.success) {
@@ -188,7 +200,7 @@ async allCourses(data:any) {
 }
 
 
-async listCourse(data: any) {
+async listCourse(data: TutorPagination) {
   try {
     console.log("try");
 
@@ -224,7 +236,7 @@ async listCourse(data: any) {
 }
 
 
-async courseDataEdit(data: { courseId: string }) {
+async courseDataEdit(data: courseId) {
   try {
     console.log('courseDataEdit------------------edit --------------------------');
 
@@ -300,7 +312,7 @@ async courseDataEdit(data: { courseId: string }) {
 }
 
 
-async editCourse(courseData:ICourse){
+async editCourse(courseData:ICourseData){
   try{
       console.log('try');
       const result =await this.courseRepo.editCourse(courseData)
@@ -313,7 +325,7 @@ async editCourse(courseData:ICourse){
 
 
 
-async addCourseStudents(data:any){
+async addCourseStudents(data:UserCourse){
   try{
       console.log('try');
       const result =await this.courseRepo.addCourseStudents(data)
@@ -325,7 +337,7 @@ async addCourseStudents(data:any){
 }
 
 
-async fetchMyCourseData(data: any) {
+async fetchMyCourseData(data: mongoose.Schema.Types.ObjectId[]) {
   try {
     console.log('Fetching course data');
     const result = await this.courseRepo.fetchMyCourseData(data);
@@ -536,7 +548,7 @@ async reportCourses() {
 
 
 
-async graphCourses(data:any){
+async graphCourses(data:GraphCourseInput[]){
   try{
       console.log('try',data);
       const result =await this.courseRepo.graphCourses(data)

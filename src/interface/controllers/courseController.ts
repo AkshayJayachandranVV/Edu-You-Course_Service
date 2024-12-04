@@ -1,6 +1,9 @@
 import {CourseService} from "../../application/use-case/course"
-import {ReportData,ReviewData,courseId,MyCoursesRequest,MyCourseFetchResponse} from "../../domain/entities/ICourse";
+import {ReportData,ReviewData,courseId,ICourse,MyCourseFetchResponse,PaginationData,TutorPagination,UserCourse,MyCoursesRequest,
+    GraphCourseInput,ICourseData
+} from "../../domain/entities/ICourse";
 import { ServerUnaryCall, sendUnaryData } from "@grpc/grpc-js";
+import mongoose from "mongoose";
 import * as grpc from '@grpc/grpc-js';
 
 
@@ -11,7 +14,7 @@ class CourseController {
         this.courseService = new CourseService()
     }
 
-    async uploadCourse(data: any){
+    async uploadCourse(data: ICourse){
         try {
             
             console.log(data,'in controlerrr');
@@ -44,7 +47,7 @@ class CourseController {
     
 
 
-    async courseDetails(data:any) {
+    async courseDetails(data:courseId) {
         try {
           console.log("in lalalal controller ------------");
       
@@ -63,7 +66,7 @@ class CourseController {
 
 
 
-    async allCourses(data: any): Promise<any> {
+    async allCourses(data: PaginationData) {
         try {
             console.log("Request received for allCourses");
     
@@ -85,7 +88,7 @@ class CourseController {
     
 
 
-    async tutorMyCourses(data:any){
+    async tutorMyCourses(data:TutorPagination){
         try {
             
             console.log('in controlerrr',data);
@@ -100,7 +103,7 @@ class CourseController {
     }
 
 
-    async listCourses(data:any){
+    async listCourses(data:TutorPagination){
         try {
             
             console.log('in controlerrr',data);
@@ -115,7 +118,7 @@ class CourseController {
     }
 
 
-    async courseDataEdit(data:any){
+    async courseDataEdit(data:courseId){
         try {
             
             console.log('in controlerrr',data);
@@ -131,7 +134,7 @@ class CourseController {
 
 
 
-    async editCourse(data: any){
+    async editCourse(data: ICourseData){
         try {
             
             console.log(data,'in controlerrr');
@@ -146,7 +149,7 @@ class CourseController {
     }
 
 
-    async addCourseStudents(data: any){
+    async addCourseStudents(data: UserCourse){
         try {
             
             console.log(data,'in controlerrr');
@@ -161,7 +164,7 @@ class CourseController {
     }
 
 
-    async fetchMyCourseData(data: any){
+    async fetchMyCourseData(data: mongoose.Schema.Types.ObjectId[]){
         try {
             
             console.log(data,'in controlerrr');
@@ -177,7 +180,7 @@ class CourseController {
 
 
     // gRPC handler function for userMyCourses
-    async userMyCourses(data:any) {
+    async userMyCourses(data:MyCoursesRequest) {
         try {
           
           console.log(data, 'in controller');
@@ -248,7 +251,7 @@ class CourseController {
     }
 
 
-    async graphCourses(data:any){
+    async graphCourses(data:GraphCourseInput[]){
         try {
             
             const result = await this.courseService.graphCourses(data);

@@ -1,6 +1,8 @@
 import { Course,ICourseDocument} from "../../model/course";
 import {CourseReport} from "../../model/report";
-import { ICourse,courseId,MyCoursesResponse,Ilesson,ISections,ReportData,ReportWithCourseData, ICourseReport} from "../entities/ICourse";
+import { ICourse,ReturnResponse,PaginationData,Ilesson,ISections,ReportData,ReportWithCourseData, ICourseReport,TutorPagination,tutorMyCourses,
+  UserCourse,userMyCourseResponse,userMyCourseRequest,GraphCourseInput,GraphCourseOutput,AllCoursesResponse,ICourseData
+} from "../entities/ICourse";
 import { ICourseRepository} from "./ICourseRepository";
 import mongoose from "mongoose";
 import { ObjectId } from 'mongodb';
@@ -139,7 +141,6 @@ export class CourseRepository implements ICourseRepository{
         };
       }
   
-      // Return an error message if no course is found
       return {
         success: false,
         message: "No course found.",
@@ -156,23 +157,19 @@ export class CourseRepository implements ICourseRepository{
   
 
 
-async allCourses(data: { skip: number; limit: number }) {
+async allCourses(data: PaginationData ): Promise<AllCoursesResponse> {
   try {
     const { skip, limit } = data;
 
-    // Fetch the total count of listed courses (for pagination metadata)
     const totalCourses = await Course.countDocuments({ isListed: true });
 
-    // Fetch the paginated courses using skip and limit
     const courses = await Course.find({ isListed: true })
       .skip(skip)
       .limit(limit);
 
     if (courses && courses.length > 0) {
-      // Calculate the average rating for each course
       const coursesWithRatings = await Promise.all(
         courses.map(async (course) => {
-          // Fetch reviews for the current course
           const reviews = await CourseReview.find({ courseId: course._id });
 
           // Calculate the average rating
@@ -213,7 +210,7 @@ async allCourses(data: { skip: number; limit: number }) {
 
 
 
-async tutorMyCourses(data: any): Promise<any> {
+async tutorMyCourses(data: TutorPagination): Promise<tutorMyCourses> {
   try {
       const { tutorId,skip,limit} = data;
       const courseDetails = await Course.find({ tutorId })
@@ -237,7 +234,9 @@ async tutorMyCourses(data: any): Promise<any> {
   }
 }
 
-async listCourse(data: any) {
+
+
+async listCourse(data: TutorPagination):Promise<tutorMyCourses>{
   try {
     const { skip , limit , tutorId } = data;
 
@@ -274,7 +273,7 @@ async listCourse(data: any) {
 
 
 
-async editCourse(courseData: any) {
+async editCourse(courseData: ICourseData) {
   try {
     // Prepare the courseData object according to the updated schema
     const courseExist = await Course.findOne({_id: courseData.courseId});
@@ -319,7 +318,7 @@ async editCourse(courseData: any) {
 }
 
 
-async addCourseStudents(data: any) {
+async addCourseStudents(data: UserCourse) {
   try {
     const { userId, courseId } = data;
 
@@ -352,6 +351,7 @@ async addCourseStudents(data: any) {
 }
 
 
+
 async fetchMyCourseData(courseIds: mongoose.Schema.Types.ObjectId[]) {
   try {
     // Fetch course details by matching the array of courseIds
@@ -379,51 +379,57 @@ async fetchMyCourseData(courseIds: mongoose.Schema.Types.ObjectId[]) {
 }
 
 
-
-async userMyCourses(data:any) {
+async userMyCourses(data: userMyCourseRequest): Promise<userMyCourseResponse> {
   try {
-
-    console.log(data,"dataaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
-      // Check if data.myCourse is defined and is an array
-      if (!data.courses || !Array.isArray(data.courses)) {
-          console.log('myCourse is undefined or not an array');
-          return {
-              success: false,
-              message: 'Invalid course data received.',
-          };
-      }
-
-      // Extract courseId from the myCourse data
-      const courseIds = data.courses.map((course: any) => course.courseId); // Specify type for course
-
-      // Fetch courses using the courseIds and select required fields
-      const courses = await Course.find(
-          { _id: { $in: courseIds } },
-          '_id courseName courseDescription thumbnail courseCategory courseLevel' // Specify fields to select
-      );
-
-      console.log('Fetched Courses:', courses);
-
-      if (courses.length > 0) {
-          return {
-              courses: courses,
-              message: 'Fetching courses was successful',
-              success: true,
-          };
-      } else {
-          return {
-              message: 'No courses found for the user',
-              success: false,
-          };
-      }
-  } catch (error) {
-      console.log('Fetch all courses error:', error);
+    console.log(data, "data");
+    
+    // Check if data.myCourse is defined and is an array
+    if (!data.courses || !Array.isArray(data.courses)) {
+      console.log("myCourse is undefined or not an array");
       return {
-          success: false,
-          message: "Error fetching courses. Please try again.",
+        success: false,
+        message: "Invalid course data received.",
       };
+    }
+
+    // Extract courseId from the myCourse data
+    const courseIds = data.courses.map((course: any) => course.courseId);
+
+    // Fetch courses using the courseIds and select required fields
+    const courses = await Course.find(
+      { _id: { $in: courseIds } },
+      "_id courseName courseDescription thumbnail courseCategory courseLevel" // Specify fields to select
+    );
+
+    console.log("Fetched Courses:", courses);
+
+    if (courses.length > 0) {
+      // Map courses to ensure _id is a string
+      const formattedCourses = courses.map((course) => ({
+        ...course.toObject(), // Convert Mongoose document to plain object
+        _id: (course._id as mongoose.Types.ObjectId).toString(), // Assert _id is ObjectId and convert to string
+      }));
+
+      return {
+        courses: formattedCourses,
+        message: "Fetching courses was successful",
+        success: true,
+      };
+    } else {
+      return {
+        message: "No courses found for the user",
+        success: false,
+      };
+    }
+  } catch (error) {
+    console.log("Fetch all courses error:", error);
+    return {
+      success: false,
+      message: "Error fetching courses. Please try again.",
+    };
   }
 }
+
 
 
 
@@ -488,7 +494,9 @@ async report(data: ReportData) {
 }
 
 
-async reportCourses(): Promise<ReportWithCourseData[] | { success: boolean; message: string }> {
+
+
+async reportCourses(): Promise<ReportWithCourseData[] | ReturnResponse> {
   try {
       // Explicitly type the course reports
       const courseReports = await CourseReport.find({}).lean().exec() as ICourseReport[];
@@ -498,49 +506,52 @@ async reportCourses(): Promise<ReportWithCourseData[] | { success: boolean; mess
       }
 
       // Extract course IDs and ensure they're ObjectIds
-      const courseIds = courseReports.map(report => 
-          new mongoose.Types.ObjectId(report.courseId)
-      );
+      const courseIds = courseReports.map(report => {
+          if (mongoose.Types.ObjectId.isValid(report.courseId)) {
+              return new mongoose.Types.ObjectId(report.courseId);
+          }
+          throw new Error(`Invalid courseId: ${report.courseId}`);
+      });
 
       // Fetch courses with `isListed` included
-      const courses = await Course.find({ 
-          _id: { $in: courseIds } 
+      const courses = await Course.find({
+          _id: { $in: courseIds }
       })
-      .select('courseName thumbnail isListed')  // Include `isListed`
+      .select('courseName thumbnail isListed') // Include `isListed`
       .lean()
-      .exec() as (Pick<ICourseDocument, '_id' | 'courseName' | 'thumbnail' | 'isListed'>)[];
+      .exec() as Pick<ICourseDocument, '_id' | 'courseName' | 'thumbnail' | 'isListed'>[];
 
       // Create a type-safe mapping
       const courseMap = new Map<string, { courseName: string; thumbnail: string; isListed: boolean }>();
-      
       courses.forEach((course) => {
-          const courseId = (course._id as mongoose.Types.ObjectId).toString(); // Assert `_id` type
-          courseMap.set(courseId, {
-              courseName: course.courseName,
-              thumbnail: course.thumbnail,
-              isListed: course.isListed
-          });
-      });
+        const courseId = (course._id as mongoose.Types.ObjectId).toString(); 
+        courseMap.set(courseId, {
+            courseName: course.courseName,
+            thumbnail: course.thumbnail,
+            isListed: course.isListed,
+        });
+    });
+    
 
       // Map the reports with proper type safety, including `isListed`
       const reportsWithCourseData: ReportWithCourseData[] = courseReports.map(report => {
-          const courseDetails = courseMap.get(report.courseId.toString());
-          
+          const courseDetails = courseMap.get(report.courseId.toString()); // Ensure courseId is converted to string
+
           return {
-              courseId: report.courseId.toString(),
+              courseId: report.courseId.toString(), // Convert ObjectId to string
               courseName: courseDetails?.courseName || 'Unknown Course',
               thumbnail: courseDetails?.thumbnail || 'default_thumbnail.jpg',
-              isListed: courseDetails?.isListed ?? false,  // Default to `false` if `isListed` is not available
-              userId: report.userId.toString(),
+              isListed: courseDetails?.isListed ?? false, // Default to `false` if `isListed` is not available
+              userId: report.userId.toString(), // Convert ObjectId to string
               username: report.username,
               email: report.email,
               reason: report.reason,
               description: report.description,
-              createdAt: report.createdAt
+              createdAt: report.createdAt,
           };
       });
 
-      console.log(reportsWithCourseData,"final-----------------------")
+      console.log(reportsWithCourseData, "final-----------------------");
 
       return reportsWithCourseData;
 
@@ -552,14 +563,15 @@ async reportCourses(): Promise<ReportWithCourseData[] | { success: boolean; mess
 
 
 
-async  graphCourses(data: any) {
+
+ async graphCourses(data: GraphCourseInput[]): Promise<GraphCourseOutput[] | { success: boolean; message: string }> {
   try {
-    // Assume `db` is your MongoDB database connection
+    // Process the input data to fetch course details
     const updatedData = await Promise.all(
-      data.map(async (item: { courseId: ObjectId, totalStudents: number }) => {
+      data.map(async (item: GraphCourseInput): Promise<GraphCourseOutput> => {
         // Fetch the course details by courseId
-        const course = await Course.findOne({ _id: item.courseId });
-        
+        const course = await Course.findOne({ _id: item.courseId }).select('courseName').lean();
+
         // Add courseName to the item if found, otherwise default to an empty string
         return {
           ...item,
@@ -574,6 +586,7 @@ async  graphCourses(data: any) {
     return { success: false, message: 'Error submitting the report. Please try again.' };
   }
 }
+
 
 async  notifyCourseData(roomId:string) {
   try {
@@ -640,7 +653,7 @@ async storeReview(
 
 
 
-async fetchReview(courseId: string) {
+async fetchReview(courseId: string){
   try {
     // Find all reviews matching the given courseId
     console.log("kakallalalal")

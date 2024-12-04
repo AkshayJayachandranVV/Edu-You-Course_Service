@@ -1,5 +1,4 @@
-import mongoose from "mongoose";
-
+import mongoose,{ ObjectId } from "mongoose";
 
 
 export interface MyCourse {
@@ -16,6 +15,10 @@ export interface MyCourseFetchResponse {
   courses: MyCourse[]; 
 }
 
+export interface UserCourse{
+  userId:string;
+  courseId :string;
+}
 
 
 export interface ISections{
@@ -32,25 +35,30 @@ export interface Ilesson{
     displayVideo?: string; 
 }
 
-
-export interface ICourse extends Document { // Extend Document here
-    tutorId: string;
-    courseId?: string;
-    courseName: string;
-    courseDescription: string;
-    coursePrice: number; 
-    courseDiscountPrice: number; 
-    courseCategory: string;
-    courseLevel: string;
-    demoURL: string;
-    thumbnail: string;
-    thumbnailKey?:string;
-    prerequisites: string[];
-    benefits: string[];
-    sections: ISections[];
-    isListed: boolean;
-    createdAt:Date
+export interface ICourse extends Document {
+  tutorId: string;
+  courseName: string;
+  courseDescription: string;
+  coursePrice: number;
+  courseDiscountPrice: number;
+  courseCategory: string;
+  courseLevel: string;
+  demoURL: string;
+  thumbnail: string;
+  thumbnailKey?: string;
+  prerequisites: string[];
+  benefits: string[];
+  sections: ISections[];
+  isListed: boolean;
+  createdAt: Date;
 }
+
+export interface ICourseDocument extends Omit<ICourse, '_id'> {
+  _id: mongoose.Types.ObjectId; 
+}
+
+
+
 
 export interface ICourseData {
     averageRating?: number;
@@ -70,10 +78,12 @@ export interface ICourseData {
     createdAt?: string;  // Optional field
     updatedAt?: string;  // Optional field
     isListed: boolean;
+    _id?: mongoose.Types.ObjectId; // Optional if being created
+    courseId?: string; // Optional if using MongoDB IDs
 }
 
 
-// Define the structure of the report with course data
+
 export interface ReportWithCourseData {
   courseId: string; // ObjectId of the course
   courseName: string;
@@ -206,28 +216,114 @@ export interface CourseResponse {
   totalCount: number;
 }
 
-export interface Course {
-  _id: string;
-  tutorId: string;
-  courseName: string;
-  courseDescription: string;
-  thumbnail: string;
-  coursePrice: number;
-  courseDiscountPrice: number;
-  courseCategory: string;
-  isListed: boolean;
-  courseLevel: string;
-  demoURL: string;
-  prerequisites: string[];
-  benefits: string[];
-  sections: Section[];
-  createdAt: string;
-  updatedAt: string;
-  __v: number;
-  students: string[];
-}
+// export interface Course {
+//   _id: string;
+//   tutorId: string;
+//   courseName: string;
+//   courseDescription: string;
+//   thumbnail: string;
+//   coursePrice: number;
+//   courseDiscountPrice: number;
+//   courseCategory: string;
+//   isListed: boolean;
+//   courseLevel: string;
+//   demoURL: string;
+//   prerequisites: string[];
+//   benefits: string[];
+//   sections: Section[];
+//   createdAt: string;
+//   updatedAt: string;
+//   __v: number;
+//   students: string[];
+// }
 
 export interface Section {
   title: string;
   content: string;
 }
+
+export interface PaginationData {
+  skip: number;
+  limit: number ;
+}
+
+
+export interface TutorPagination {
+  skip: number;
+  limit: number;
+  tutorId:string;
+}
+
+export interface tutorMyCourses {
+  totalCount?:number;
+  message:string;
+  success:boolean;
+  courses:ICourse[]
+}
+
+
+export interface userMyCourseRequest{
+  courses: Array<{ courseId: string }>;
+}
+
+interface FetchedCourse {
+  _id: string;
+  courseName: string;
+  courseDescription: string;
+  thumbnail: string;
+  courseCategory: string;
+  courseLevel: string;
+}
+
+export interface userMyCourseResponse {
+  success: boolean;
+  message: string;
+  courses?: FetchedCourse[];
+}
+
+export interface ReturnResponse{ 
+  success: boolean; 
+  message: string 
+}
+
+export interface GraphCourseInput {
+  courseId: ObjectId;
+  totalStudents: number;
+}
+
+export interface GraphCourseOutput extends GraphCourseInput {
+  courseName: string;
+}
+
+
+export interface FetchReview {
+  success: boolean;
+  message: string;
+  reviews: ICourseReview[];
+}
+
+export interface CourseWithAverageRating extends ICourse {
+  averageRating: number; 
+}
+
+export interface CourseWithSignedThumbnail extends CourseWithAverageRating {
+  thumbnail: string; 
+  totalCount?: number;
+}
+
+
+export interface AllCourseReturn {
+  courses: CourseWithSignedThumbnail[]; // Array of courses with signed thumbnails and average ratings
+  totalCount: number; // Total count of courses for pagination
+  message: string; // Success or error message
+  success: boolean; // Success status
+}
+
+
+export interface AllCoursesResponse {
+  courses?: CourseWithAverageRating[]; 
+  totalCount?: number; 
+  message: string; 
+  success: boolean; 
+}
+
