@@ -680,6 +680,41 @@ async TotalCourses() {
 }
 
 
+async  listUnlist(data: any) {
+  try {
+    const { courseId } = data;
+
+    // Fetch the course by its ID
+    const course = await Course.findById(courseId);
+
+    if (!course) {
+      return { success: false, message: "Course not found" };
+    }
+
+    const updatedCourse = await Course.findByIdAndUpdate(
+      courseId,
+      { isListed: !course.isListed },
+      { new: true } 
+    );
+
+    const totalListedCourses = await Course.countDocuments({ isListed: true });
+
+    return {
+      success: true,
+      message: `Course has been ${updatedCourse?.isListed ? "listed" : "unlisted"} successfully.`,
+      course: updatedCourse,
+      totalListedCourses,
+    };
+  } catch (error) {
+    console.error("Error toggling course listing:", error);
+    return {
+      success: false,
+      message: "Error toggling course listing. Please try again.",
+    };
+  }
+}
+
+
 }
 
 

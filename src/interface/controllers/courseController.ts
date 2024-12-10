@@ -322,6 +322,21 @@ class CourseController {
     }
 
 
+    async listUnlist(data:any){
+        try {
+            
+            const result = await this.courseService.listUnlist(data);
+            console.log('got result from course.ts for graph courses');
+            
+            return result
+        }catch(error){
+            console.log('error in addcourse',error);
+    
+        }
+    }
+
+
+
 
 }
 

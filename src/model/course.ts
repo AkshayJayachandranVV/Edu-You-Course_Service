@@ -72,6 +72,10 @@ const courseSchema: Schema = new Schema({
     type: Boolean,
     required: true,
   },
+  adminIsListed: {
+    type: Boolean,
+    required: true,
+  },
   courseLevel: {
     type: String,
     enum: ['Beginner', 'Intermediate', 'Advanced'],

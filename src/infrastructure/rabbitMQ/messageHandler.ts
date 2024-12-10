@@ -111,6 +111,11 @@ export default class MessageHandlers{
                 console.log('Handling operation',operations,data);
                 response = await courseController.userMyCourses(data)
                 console.log("data reached ",response);
+                break;
+            case 'list-unlist-course' :
+                console.log('Handling operation',operations,data);
+                response = await courseController.listUnlist(data)
+                console.log("data reached ",response);
                 break; 
         }
 

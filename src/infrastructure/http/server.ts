@@ -18,7 +18,7 @@ const startServer = async () =>{
 
         await databaseConnection();
 
-        startGrpcServer();
+        // startGrpcServer();
 
         RabbitMQClient.initialize()
 

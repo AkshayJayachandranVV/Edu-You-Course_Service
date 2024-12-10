@@ -634,6 +634,20 @@ async TotalCourses(){
   }
 }
 
+
+async listUnlist(data:any){
+  try{
+      console.log('try');
+
+
+      const result =await this.courseRepo.listUnlist(data)
+      return result            
+  }catch(error){
+      console.log('catch');
+      
+  }
+}
+
 }
 
 

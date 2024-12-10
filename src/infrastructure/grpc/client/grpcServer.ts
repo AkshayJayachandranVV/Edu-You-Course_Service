@@ -4,7 +4,7 @@ import path from 'path';
 import { courseController } from '../../../interface/controllers/courseController';
 import config from '../../config/config';
 
-const COURSE_PROTO_PATH = path.resolve(__dirname, '../proto/COURSE.proto');
+const COURSE_PROTO_PATH = path.resolve(__dirname, '../proto/course.proto');
 
 const coursePackageDefinition = protoLoader.loadSync(COURSE_PROTO_PATH, {
     keepCase: true,

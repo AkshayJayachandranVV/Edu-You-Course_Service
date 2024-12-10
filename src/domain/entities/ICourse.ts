@@ -50,6 +50,7 @@ export interface ICourse extends Document {
   benefits: string[];
   sections: ISections[];
   isListed: boolean;
+  adminIsListed:boolean;
   createdAt: Date;
 }
 
