@@ -53,7 +53,7 @@ export default class MessageHandlers{
 
             case 'admin-courses-list' :
                 console.log('Handling operation',operations,data);
-                response = await courseController.listCourses(data)
+                response = await courseController.adminListCourses(data)
                 console.log("data reached ",response);
                 break;
 

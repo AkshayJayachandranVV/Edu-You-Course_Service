@@ -648,6 +648,44 @@ async listUnlist(data:any){
   }
 }
 
+
+
+async adminListCourses(data: any) {
+  try {
+    console.log('try');
+
+    // Retrieve course data
+    const result = await this.courseRepo.adminListCourses(data);
+
+    // Validate result format
+    if (!result || !Array.isArray(result.courses)) {
+      console.log('Invalid course data:', result);
+      return { success: false, message: 'Failed to retrieve courses.' };
+    }
+
+    // Replace each `thumbnail` key in `result.courses` with a signed URL
+    const coursesWithSignedUrls = await Promise.all(
+      result.courses.map(async (course) => {
+        const signedUrl = await this.getObjectSignedUrl(course.thumbnail);
+        return {
+          ...course,
+          thumbnail: signedUrl,
+        };
+      })
+    );
+
+    // Return updated courses with the rest of the result data
+    return {
+      ...result,
+      courses: coursesWithSignedUrls,
+    };
+  } catch (error) {
+    console.error('Error in adminListCourses:', error);
+    return { success: false, message: 'Error fetching courses with signed URLs.' };
+  }
+}
+
+
 }
 
 

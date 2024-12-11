@@ -715,6 +715,59 @@ async  listUnlist(data: any) {
 }
 
 
+
+
+async  adminListCourses(data: PaginationData) {
+  try {
+    const { skip, limit } = data;
+
+    const totalCourses = await Course.countDocuments();
+
+    const courses = await Course.find()
+      .skip(skip)
+      .limit(limit);
+
+    if (courses && courses.length > 0) {
+      const coursesWithRatings = await Promise.all(
+        courses.map(async (course) => {
+          const reviews = await CourseReview.find({ courseId: course._id });
+
+          // Calculate the average rating
+          let averageRating = 0;
+          if (reviews.length > 0) {
+            const totalRating = reviews.reduce((sum: number, review: any) => sum + review.rating, 0);
+            averageRating = totalRating / reviews.length;
+          }
+
+          // Return the course with the average rating added
+          return {
+            ...course.toObject(), // Spread the course data
+            averageRating, // Add the average rating
+          };
+        })
+      );
+
+      return {
+        courses: coursesWithRatings, // Paginated courses with average ratings
+        totalCount: totalCourses, // Total count of courses
+        message: "Courses fetched successfully",
+        success: true,
+      };
+    }
+
+    return {
+      courses: [],
+      totalCount: totalCourses,
+      message: "No courses found.",
+      success: false,
+    };
+  } catch (error) {
+    console.error("Error fetching courses:", error);
+    return { success: false, message: "Failed to fetch courses. Please try again." };
+  }
+}
+
+
 }
 
 
